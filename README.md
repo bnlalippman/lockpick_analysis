@@ -93,3 +93,7 @@ Take a look at:
 ![XOR Diagram](images/xor.png)
 
 # Part 5: Writing `decrypt.py`
+
+Using what we learned about XOR, we will write `decrypt.py` from scratch. 
+
+You can use `decrypt/decrypt.py` for guidance.
